@@ -7,12 +7,6 @@ import cv2
 import time
 import pandas as pd
 
-def cleanup_text(text):
-    # strip out non-ASCII text so we can draw the text on the image
-    # using OpenCV
-    return "".join([c if ord(c) < 128 else "" for c in text]).strip()
-
-
 def ocr(img, c1, c2, c3, c4, c5, c6, c7, c8):
 
     print("[INFO] OCR'ing input image...")
@@ -69,14 +63,66 @@ def ocr(img, c1, c2, c3, c4, c5, c6, c7, c8):
     df3["BRy"] = df3["BBox"].apply(lambda x: x[2][1])
     df4["BRy"] = df4["BBox"].apply(lambda x: x[2][1])
     # OCRの結果をdiskに保存する。
-    df1[["Text", "BRy"]].to_csv("C:\\Users\\shimadzu\\Documents\\t-icu\\col1.csv",encoding='utf-8-sig')
-    df2[["Text", "BRy"]].to_csv("C:\\Users\\shimadzu\\Documents\\t-icu\\col2.csv",encoding='utf-8-sig')
-    df3[["Text", "BRy"]].to_csv("C:\\Users\\shimadzu\\Documents\\t-icu\\col3.csv",encoding='utf-8-sig')
-    df4[["Text", "BRy"]].to_csv("C:\\Users\\shimadzu\\Documents\\t-icu\\col4.csv",encoding='utf-8-sig')
+    df1[["Text", "BRy"]].to_csv("col1.csv",encoding='utf-8-sig')
+    df2[["Text", "BRy"]].to_csv("col2.csv",encoding='utf-8-sig')
+    df3[["Text", "BRy"]].to_csv("col3.csv",encoding='utf-8-sig')
+    df4[["Text", "BRy"]].to_csv("col4.csv",encoding='utf-8-sig')
 
-    #cv2.imshow("Image", col2)
-    #cv2.waitKey(0)
+    # OCRした資料から必要な列だけを探して読み取る。
+    # 必要な列は項目がPLTやT-Bilになっているところだけですので、それを指定します。
+    # T-Bil列のY座標を計算する
+    TBil_ycoord = df1.loc[(df1["Text"] == "T-Bi l") | (df1["Text"] == "T-Bil"), "BRy"]
+    TBil_ycoord = TBil_ycoord.reset_index()
+    TBil_ycoord = TBil_ycoord["BRy"][0]
+    # PLT列のY座標を計算する
+    PLT_ycoord = df1.loc[(df1["Text"] == "PLT"), "BRy"]
+    PLT_ycoord = PLT_ycoord.reset_index()
+    PLT_ycoord = PLT_ycoord["BRy"][0]
+    # CRE列のY座標を計算する
+    CRE_ycoord = df1.loc[(df1["Text"] == "CRE"), "BRy"]
+    CRE_ycoord = CRE_ycoord.reset_index()
+    CRE_ycoord = CRE_ycoord["BRy"][0]
+    # T-Bil列のY座標から＋－15ピクセル（行が斜めになっている可能性があるから）に離れているY座標をColumn2から探し出す。これはT-Bilに対する結果です。
+    TBil_res = df2.loc[(df2["BRy"] > TBil_ycoord - 15) & (df2["BRy"] < TBil_ycoord + 15)]
+    TBil_res = TBil_res.reset_index()
+    TBil_res = TBil_res["Text"][0]
+    # PLT列のY座標から＋－15ピクセルに離れているY座標をColumn2から探し出す。これはPLTに対する結果です（行が斜めになっている可能性があるから）
+    PLT_res = df2.loc[(df2["BRy"] > PLT_ycoord - 15) & (df2["BRy"] < PLT_ycoord + 15)]
+    PLT_res = PLT_res.reset_index()
+    PLT_res = PLT_res["Text"][0]
 
+    CRE_res = df2.loc[(df2["BRy"] > CRE_ycoord - 15) & (df2["BRy"] < CRE_ycoord + 15)]
+    CRE_res = CRE_res.reset_index()
+    CRE_res = CRE_res["Text"][0]
+
+    # PLT列のY座標から＋－30ピクセルに離れているY座標をColumn3から探し出す。これはPLTに対する単位です（行が斜めになっている可能性があるから）
+    units_PLT = df3.loc[(df3["BRy"] > PLT_ycoord - 30) & (df3["BRy"] < PLT_ycoord + 30)]
+    units_PLT = units_PLT.reset_index()
+    units_PLT_final = units_PLT.sum(axis=0)["Text"]
+
+    # PLT列のY座標から＋－15ピクセルに離れているY座標をColumn4から探し出す。これはPLTに対する結果のL/Hです（行が斜めになっている可能性があるから）
+    PLT_res_LorH = df4.loc[(df4["BRy"] > PLT_ycoord - 15) & (df4["BRy"] < PLT_ycoord + 15)]
+    PLT_res_LorH = PLT_res_LorH.reset_index()
+
+    # T-Bil列のY座標から＋－15ピクセルに離れているY座標をColumn4から探し出すこれはT-Bilに対する結果のL / Hです
+    TBil_res_LorH = df4.loc[(df4["BRy"] > TBil_ycoord - 15) & (df4["BRy"] < TBil_ycoord + 15)]
+    TBil_res_LorH = TBil_res_LorH.reset_index()
+
+    CRE_res_LorH = df4.loc[(df4["BRy"] > CRE_ycoord - 15) & (df4["BRy"] < CRE_ycoord + 15)]
+    CRE_res_LorH = CRE_res_LorH.reset_index()
+    if len(PLT_res_LorH):
+        PLT_res_LorH = PLT_res_LorH["Text"][0]
+    else:
+        PLT_res_LorH = " "
+    if len(TBil_res_LorH):
+        TBil_res_LorH = TBil_res_LorH["Text"][0]
+    else:
+        TBil_res_LorH = " "
+    if len(CRE_res_LorH):
+        CRE_res_LorH = CRE_res_LorH["Text"][0]
+    else:
+        CRE_res_LorH = " "
+    return TBil_res, TBil_res_LorH, PLT_res, PLT_res_LorH, units_PLT_final, CRE_res, CRE_res_LorH
 
 def divide_form_cols(im):
     # Column毎に分けるために最小のRowだけをよみとっても結構ですのでイメージをCropしてOCRに進む。
@@ -118,71 +164,6 @@ def divide_form_cols(im):
     print (col1_start, col1_end, col2_start, col2_end, col3_start, col3_end, col4_start, col4_end)
 
     return int(col1_start), int(col1_end), int(col2_start), int(col2_end), int(col3_start), int(col3_end), int(col4_start), int(col4_end)
-
-
-def find_reqd_text():
-
-    df1 = pd.read_csv("C:\\Users\\shimadzu\\Documents\\t-icu\\col1.csv")
-    df2 = pd.read_csv("C:\\Users\\shimadzu\\Documents\\t-icu\\col2.csv")
-    df3 = pd.read_csv("C:\\Users\\shimadzu\\Documents\\t-icu\\col3.csv")
-    df4 = pd.read_csv("C:\\Users\\shimadzu\\Documents\\t-icu\\col4.csv")
-    # OCRした資料から必要な列だけを探して読み取る。
-    # 必要な列は項目がPLTやT-Bilになっているところだけですので、それを指定します。
-    col1_reqd = df1.loc[(df1["Text"] == "T-Bi l")| (df1["Text"] == "T-Bil")|(df1["Text"] == "PLT")|(df1["Text"] == "CRE"), "BRy"]
-    col1_reqd = col1_reqd.reset_index()
-    # T-Bil列のY座標を計算する
-    TBil_ycoord = df1.loc[(df1["Text"] == "T-Bi l")| (df1["Text"] == "T-Bil"),"BRy"]
-    TBil_ycoord = TBil_ycoord.reset_index()
-    TBil_ycoord = TBil_ycoord["BRy"][0]
-    # PLT列のY座標を計算する
-    PLT_ycoord = df1.loc[(df1["Text"] == "PLT"), "BRy"]
-    PLT_ycoord = PLT_ycoord.reset_index()
-    PLT_ycoord = PLT_ycoord["BRy"][0]
-    # CRE列のY座標を計算する
-    CRE_ycoord = df1.loc[(df1["Text"] == "CRE"), "BRy"]
-    CRE_ycoord = CRE_ycoord.reset_index()
-    CRE_ycoord = CRE_ycoord["BRy"][0]
-    # T-Bil列のY座標から＋－15ピクセル（行が斜めになっている可能性があるから）に離れているY座標をColumn2から探し出す。これはT-Bilに対する結果です。
-    TBil_res = df2.loc[(df2["BRy"]> TBil_ycoord-15)& (df2["BRy"]< TBil_ycoord+15)]
-    TBil_res = TBil_res.reset_index()
-    TBil_res = TBil_res["Text"][0]
-    # PLT列のY座標から＋－15ピクセルに離れているY座標をColumn2から探し出す。これはPLTに対する結果です（行が斜めになっている可能性があるから）
-    PLT_res = df2.loc[(df2["BRy"] > PLT_ycoord - 15) & (df2["BRy"] < PLT_ycoord + 15)]
-    PLT_res = PLT_res.reset_index()
-    PLT_res = PLT_res["Text"][0]
-
-    CRE_res = df2.loc[(df2["BRy"] > CRE_ycoord - 15) & (df2["BRy"] < CRE_ycoord + 15)]
-    CRE_res = CRE_res.reset_index()
-    CRE_res = CRE_res["Text"][0]
-
-    # PLT列のY座標から＋－30ピクセルに離れているY座標をColumn3から探し出す。これはPLTに対する単位です（行が斜めになっている可能性があるから）
-    units_PLT = df3.loc[(df3["BRy"] > PLT_ycoord - 30) & (df3["BRy"] < PLT_ycoord + 30)]
-    units_PLT = units_PLT.reset_index()
-    units_PLT_final = units_PLT.sum(axis = 0)["Text"]
-
-    # PLT列のY座標から＋－15ピクセルに離れているY座標をColumn4から探し出す。これはPLTに対する結果のL/Hです（行が斜めになっている可能性があるから）
-    PLT_res_LorH = df4.loc[(df4["BRy"] > PLT_ycoord - 15) & (df4["BRy"] < PLT_ycoord + 15)]
-    PLT_res_LorH = PLT_res_LorH.reset_index()
-
-    # T-Bil列のY座標から＋－15ピクセルに離れているY座標をColumn4から探し出すこれはT-Bilに対する結果のL / Hです
-    TBil_res_LorH = df4.loc[(df4["BRy"] > TBil_ycoord - 15) & (df4["BRy"] < TBil_ycoord + 15)]
-    TBil_res_LorH = TBil_res_LorH.reset_index()
-
-    CRE_res_LorH = df4.loc[(df4["BRy"] > CRE_ycoord - 15) & (df4["BRy"] < CRE_ycoord + 15)]
-    CRE_res_LorH = CRE_res_LorH.reset_index()
-    if len(PLT_res_LorH):
-        PLT_res_LorH = PLT_res_LorH["Text"][0]
-    else:
-        PLT_res_LorH = " "
-    if len(TBil_res_LorH):
-        TBil_res_LorH = TBil_res_LorH["Text"][0]
-    else:
-        TBil_res_LorH = " "
-    if len(CRE_res_LorH):
-        CRE_res_LorH = CRE_res_LorH["Text"][0]
-    else:
-        CRE_res_LorH = " "
-    return TBil_res, TBil_res_LorH, PLT_res, PLT_res_LorH, units_PLT_final, CRE_res, CRE_res_LorH
 
 
 def ocr_rapidpoint(im):
