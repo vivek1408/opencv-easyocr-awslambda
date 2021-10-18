@@ -1,0 +1,1 @@
+# opencv-easyocr-awslambda
