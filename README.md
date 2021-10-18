@@ -22,3 +22,11 @@ Once that is done, we will run through the columns and find the required text (T
 These results are then stored in a MySQL database in AWS RDS for future. 
 
 The intermediate individual column CSV files are stored in S3 for other purposes.
+
+Essentially the results of OCR of form type 1 looks like this:
+
+![alt text](https://github.com/vivek1408/opencv-easyocr-awslambda/blob/main/Images/type1/sample2_res.jpg?raw=true)
+
+And the results of OCR of RAPIDPoint results looks like this:
+
+![alt text](https://github.com/vivek1408/opencv-easyocr-awslambda/blob/main/Images/RAPIDPoint/s2res.JPG?raw=true)
