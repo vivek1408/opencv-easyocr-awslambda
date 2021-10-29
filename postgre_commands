@@ -1,0 +1,24 @@
+CREATE TABLE res_type1 (
+    user_id TEXT,
+    time_now TIMESTAMP,
+    item_name TEXT,
+	result TEXT,
+	resultLorH TEXT,
+	units TEXT,
+    PRIMARY KEY(user_id, time_now, item_name)
+);
+CREATE TABLE res_type2 (
+    user_id TEXT,
+    time_now TIMESTAMP,
+    item_name TEXT,
+	result TEXT,
+    PRIMARY KEY(user_id, time_now)
+);
+insert into res_type2 (user_id, time_now, item_name, result)
+values('502559', current_timestamp, 'po2', '89.0');
+
+insert into res_type1 (user_id, time_now, item_name, result, resultLorH, units)
+values('502559', '2021-10-29 14:28:06.607339', 'T-Bil','67','L', ' ');
+
+SELECT	* FROM res_type1
+SELECT	* FROM res_type2

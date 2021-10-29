@@ -3,26 +3,31 @@ import boto3
 import os
 import json
 import easy_ocr
+from datetime import datetime
 
 BUCKET_NAME = os.environ.get("BUCKET_NAME")
 RDS_INVOCATION_LAMBDA = os.environ.get("RDS_INVOCATION_LAMBDA")
+
 
 def lambda_handler(event, context):
     print(event)
     records = event["Records"]
     s3 = boto3.client('s3')
-    filepath = "sample3.jpg"
+    filepath = "Images\\RAPIDPoint\\s1.jpg"
+
     for record in records:
         key = record["s3"]["object"]["key"]
         filename = key.split("/")[-1]
         print(key)
         filepath = f"/tmp/{filename}"
         print(filepath)
+        filename = filename.split(".")[0]
         with open(filepath, 'wb') as f:
             s3.download_fileobj(BUCKET_NAME, key, f)
-    # return True
+
     im = cv2.imread(filepath, 1)
 
+    time = datetime.now()
     # イメージのシェープからイメージの種類を決める。RapidPointの画像の幅は1500ピクセルを超えない。
     x, y = im.shape[:2]
     if (x < 1500) | (y < 1500):
@@ -30,8 +35,9 @@ def lambda_handler(event, context):
         a = easy_ocr.ocr_rapidpoint(im)
         data = {
             "doc_type": 2,
+            "time": time,
             "user_id": filename,
-            "p02": a
+            "result": a
         }
         print(data)
 
@@ -48,17 +54,19 @@ def lambda_handler(event, context):
         data = {
             "doc_type": 1,
             "user_id": filename,
+            "time": time,
             "T-Bil": [a, b, " "],
             "CRE": [f, g, " "],
             "PLT": [c, d, e]
         }
+
         print(data)
-    #  Connect to the RDS dump lambda function and pass the OCR data to that function.
+    # Connect to the RDS dump lambda function and pass the OCR data to that function.
     lambda_client = boto3.client('lambda')
     lambda_client.invoke(FunctionName=RDS_INVOCATION_LAMBDA,
                          InvocationType="Event",
                          Payload=json.dumps(data)
-                      )
+                         )
 
     return {
         "statusCode": 200,
@@ -66,6 +74,5 @@ def lambda_handler(event, context):
         "message": "RDS Lambda invocation successful!"
     }
 
-
-if __name__ == '__main__':
-    lambda_handler({}, None)
+# print("callinghandler function...")
+# lambda_handler({}, None)

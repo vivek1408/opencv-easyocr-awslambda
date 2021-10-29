@@ -16,7 +16,7 @@ RUN apt-get update && \
 # Copy function code
 RUN mkdir -p ${FUNCTION_DIR}
 COPY app/requirements.txt ${FUNCTION_DIR}/
-RUN pip install -r ${FUNCTION_DIR}/requirements.txt --target ${FUNCTION_DIR}
+RUN pip install -r ${FUNCTION_DIR}/requirements.txt --target ${FUNCTION_DIR} --no-cache-dir
 
 
 # Install the function's dependencies

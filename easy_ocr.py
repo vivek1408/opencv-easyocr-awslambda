@@ -1,5 +1,3 @@
-# USAGE
-# python easy_ocr.py --image images/arabic_sign.jpg --langs en,ar
 
 import pandas as pd
 import time
@@ -8,9 +6,9 @@ from easyocr import Reader
 
 MODULE_PATH = "/opt/models"
 MODULE_ARGS = dict(
-    gpu=False,
+    gpu=True,
     model_storage_directory=MODULE_PATH,
-    download_enabled=False,
+    download_enabled=True,
     user_network_directory=".",
 )
 
@@ -197,12 +195,12 @@ def ocr_rapidpoint(im):
     df["BRy"] = df["BBox"].apply(lambda x: x[2][1])
     df["TLx"] = df["BBox"].apply(lambda x: x[0][0])
     df = df.sort_values(["TLx"])
-    # df[["Text", "BRy", "TLx"]].to_csv("rp.csv", encoding='utf-8-sig')
-    reqd_text = df.loc[
+    #df[["Text", "BRy", "TLx"]].to_csv("rp.csv", encoding='utf-8-sig')
+    po2 = df.loc[
         (df["Text"] == "pOz") | (df["Text"] == "poz") | (df["Text"] == "pO2"), "BRy"]
-    reqd_text = reqd_text.reset_index()
-    poz_ycoord = reqd_text["BRy"][0]
-    poz_res = df.loc[(df["BRy"] > poz_ycoord - 40) & (df["BRy"] < poz_ycoord + 40)]
-    poz_res = poz_res.reset_index()
-    poz_res = poz_res["Text"][1]
-    return poz_res
+    reqd_text = po2.reset_index()
+    po2_ycoord = reqd_text["BRy"][0]
+    po2_res = df.loc[(df["BRy"] > po2_ycoord - 40) & (df["BRy"] < po2_ycoord + 40)]
+    po2_res = po2_res.reset_index()
+    po2_res = po2_res["Text"][1]
+    return po2_res
